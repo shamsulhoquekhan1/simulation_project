@@ -1,0 +1,195 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Private Practice
+
+Loading Libraries
+
+```{r}
+library(fitdistrplus)
+library(ExtDist)
+library(EnvStats)
+library(twosamples)
+library(DescTools)
+library(tidyr)
+library("xlsx")
+```
+
+
+
+
+Loading Data
+
+```{r warning=FALSE}
+ppdata <- read.xlsx("MillerPainTreatmentCenterData.xlsx", 5, header=TRUE)
+colnames(ppdata)[3] = "Resident.Patient"
+colnames(ppdata)[5] = "Resident.Attending"
+
+```
+
+***Resident Review***
+
+```{r warning=FALSE}
+bestDist(ppdata$Resident.Review, candDist = c("Gamma", "Normal", "Exp", "Beta", "Uniform"),criterion = "AIC")
+```
+
+
+```{r warning=FALSE}
+
+hist(ppdata$Resident.Review, main="Histogram of observed data",
+     xlab = "Resident Review", prob = TRUE, ylim=c(0, 0.10)
+     , col="peachpuff")
+
+fitexpo = fitdistr(ppdata$Resident.Review, "Exponential")
+
+RandomExpo = rExp(nrow(ppdata),
+                     scale = fitexpo$estimate[1])
+
+
+
+lines(density(RandomExpo),col = "blue")
+
+ks.test(ppdata$Resident.Review, RandomExpo)
+fitexpo
+```
+
+
+***Resident and patients***
+
+```{r warning=FALSE}
+
+mydata = subset(ppdata, !is.na(ppdata$Resident.Patient))
+
+bestDist(mydata$Resident.Patient, candDist = c("Gamma","Weibull", "Normal", "Exp", "Beta", "Uniform"),criterion = "AIC")
+
+```
+
+--------------------------------------------------------
+
+```{r warning=FALSE}
+
+hist(mydata$Resident.Patient, main="Histogram of observed data",
+     xlab = "Resident and patients", prob = TRUE, ylim=c(0, 0.07)
+     , col="peachpuff")
+
+fitweibull = fitdistr(mydata$Resident.Patient, "weibull")
+
+RandomWeibull = rweibull(nrow(mydata),
+                         shape = fitweibull$estimate[1],
+                         scale = fitweibull$estimate[2])
+
+
+
+lines(density(RandomWeibull),col = "red")
+
+
+ks.test(mydata$Resident.Patient, RandomWeibull)
+fitweibull
+
+```
+
+
+
+***Teach***
+
+```{r warning=FALSE}
+
+mydata = ppdata[!(is.na(ppdata$Teach)), ]
+
+bestDist(mydata$Teach, candDist = c("Gamma", "Normal",  "Exp", "Beta", "Uniform"),criterion = "AIC")
+
+```
+
+--------------------------------------------------------
+
+```{r warning=FALSE}
+
+hist(mydata$Teach, main="Histogram of observed data",
+     xlab = "Teach", prob = TRUE, ylim=c(0, 0.12)
+     , col="peachpuff")
+
+fitexpo = fitdistr(mydata$Teach, "Exponential")
+
+RandomExpo = rExp(nrow(mydata),
+                     scale = fitexpo$estimate[1])
+
+fitgamma = eGamma(mydata$Teach)
+
+RandomGamma = rGamma(nrow(mydata), shape = fitgamma$shape, scale = fitgamma$scale)
+
+
+RandomTriang = rtri(nrow(mydata),
+         min = min(mydata$Teach),
+         max = max(mydata$Teach),
+         mode = Mode(mydata$Teach)[1])
+
+
+lines(density(RandomExpo),col = "red")
+lines(density(RandomTriang), col = "blue")
+lines(density(RandomGamma), col = "black")
+
+
+legend(14, 0.07, legend=c("Exponential", "Triangular" , "Gamma"), 
+       fill = c("red","blue","black"), bty="n")
+
+
+ks.test(mydata$Teach, RandomExpo)
+fitexpo
+
+ks.test(mydata$Teach, RandomTriang)
+
+ks.test(mydata$Teach, RandomGamma)
+fitgamma
+
+```
+
+
+***Resident and attending***
+
+```{r warning=FALSE}
+
+mydata = ppdata[!(is.na(ppdata$Resident.Attending)), ]
+
+bestDist(mydata$Resident.Attending, candDist = c("Gamma", "Weibull", "Normal", "Exp", "Beta", "Uniform"),criterion = "AIC")
+
+```
+
+------------------------------------------------
+
+```{r warning=FALSE}
+
+hist(mydata$Resident.Attending, main="Histogram of observed data",
+     xlab = "Resident and Attending time", prob = TRUE, ylim=c(0, 0.1)
+     , col="peachpuff")
+
+fitweibull = fitdistr(mydata$Resident.Attending, "weibull")
+
+RandomWeibull = rweibull(nrow(mydata),
+                         shape = fitweibull$estimate[1],
+                         scale = fitweibull$estimate[2])
+
+
+fitgamma = fitdistr(mydata$Resident.Attending, "gamma")
+
+RandomGamma = rGamma(nrow(mydata), shape = fitgamma$estimate[1], scale = fitgamma$estimate[2])
+
+
+lines(density(RandomWeibull),col = "red")
+
+lines(density(RandomGamma), col = "black")
+
+legend(40, 0.08, legend=c("Weibull", "Gamma"),
+       fill = c("red","black"), bty="n")
+
+ks.test(mydata$Resident.Attending, RandomWeibull)
+
+fitweibull
+
+ks.test(mydata$Resident.Attending, RandomGamma)
+
+fitgamma
+```
+
+----------------------------------------------------
